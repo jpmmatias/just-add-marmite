@@ -1,4 +1,5 @@
 import { createClient } from 'contentful';
+import Skeleton from '../../components/Skeleton';
 import { documentToReactComponents } from '@contentful/rich-text-react-renderer';
 import Head from 'next/head';
 import Image from 'next/image';
@@ -20,29 +21,42 @@ export const getStaticPaths = async () => {
 	});
 	return {
 		paths: paths,
-		fallback: false,
+		fallback: true,
 	};
 };
 
 export async function getStaticProps({ params }) {
 	const slug = params.slug;
 
-	const res = await client.getEntries({
+	const { items } = await client.getEntries({
 		content_type: 'recipe',
 		'fields.slug': slug,
 	});
 
+	if (!items.length) {
+		return {
+			redirect: {
+				destination: '/',
+				permanent: false,
+			},
+		};
+	}
+
 	return {
 		props: {
-			recipe: res.items[0],
+			recipe: items[0],
 		},
 		revalidate: 604800 * 4,
 	};
 }
 
-export default function RecipeDetails({ recipe: { fields } }) {
-	const { title, featuredImage, cookingTime, ingredients, method } = fields;
-	console.log(method);
+export default function RecipeDetails({ recipe }) {
+	if (!recipe) {
+		return <Skeleton />;
+	}
+	const { title, featuredImage, cookingTime, ingredients, method } =
+		recipe.fields;
+
 	return (
 		<>
 			<Head>
